@@ -1,22 +1,21 @@
-"""
-URL configuration for core project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
-from django.contrib import admin
 from django.urls import path
+from .views import ReceiveBatchView, SmartReorderView, ExpiringSoonView, InventoryCheckView
 
 urlpatterns = [
+    # UC01
+    path('stock/receive/', ReceiveBatchView.as_view(), name='receive-batch'),
+
+    # UC02
+    path('orders/smart-reorder/', SmartReorderView.as_view(), name='smart-reorder'),
+
+    # UC03
+    path('stock/expiring/', ExpiringSoonView.as_view(), name='expiring-soon'),
+    path('stock/discount/<int:pk>/', ExpiringSoonView.as_view(), name='apply-discount'),
+
+    path('inventory/start/', InventoryCheckView.as_view(), name='inventory-start'),
+    path('inventory/<int:pk>/check/', InventoryCheckView.as_view(), name='inventory-check'),
+
+
     path('admin/', admin.site.urls),
+    path('api/', include('api.urls')),
 ]
