@@ -1,3 +1,8 @@
+from django.db import transaction
+from django.utils import timezone
+from datetime import timedelta
+from .models import Tovar, Sarza, NavrhObjednavky, User, Inventura, ProtokolInventury
+
 class ExpirationService:
     """Сервіс для UC03 (Моніторинг та знижки)"""
 
@@ -20,6 +25,7 @@ class ExpirationService:
 
 
 class InventoryService:
+    """Сервіс для UC04 (Цифрова інвентаризація)"""
     @staticmethod
     @transaction.atomic
     def start_inventory(user, kategoria):
@@ -33,7 +39,7 @@ class InventoryService:
         tovar = Tovar.objects.get(pk=tovar_id)
         system_qty = tovar.aktualny_stav()
         difference = real_qty - system_qty
-        
+
         # Створюємо протокол, якщо є розбіжність (UC04: 6-7)
         if difference != 0:
             ProtokolInventury.objects.create(
@@ -41,7 +47,7 @@ class InventoryService:
                 zisteny_rozdiel=difference,
                 poznamka=f"Rozdiel pre {tovar.nazov}: Systém {system_qty}, Realita {real_qty}"
             )
-        
+
         return {
             "tovar": tovar.nazov,
             "system_qty": system_qty,
@@ -62,37 +68,29 @@ class OrderService:
         low_stock_items = InventoryRepository.get_items_below_limit()
         created_orders = []
 
-        # Групуємо по постачальнику
         suppliers_map = {}
         for tovar in low_stock_items:
             if tovar.dodavatel:
                 suppliers_map.setdefault(tovar.dodavatel, []).append(tovar)
 
         for supplier, items in suppliers_map.items():
-            # Створюємо замовлення в статусі "На схвалення"
             order = NavrhObjednavky.objects.create(
                 dodavatel=supplier,
                 stav=NavrhObjednavky.Status.NA_SCHVALENIE
             )
 
-            # Додаємо позиції (наприклад, замовляємо критичний ліміт * 2)
             for item in items:
                 order.polozky.create(
                     tovar=item,
                     mnozstvo=item.kriticky_limit * 2,
-                    cena_pri_objednavke=0 # Буде уточнено менеджером
+                    cena_pri_objednavke=0
                 )
             created_orders.append(order)
 
         return created_orders
 
-from django.db import transaction
-from .models import Tovar, Sarza, NavrhObjednavky, User
-from django.utils import timezone
-from datetime import timedelta
-
 class StockService:
-    """Сервіс для UC01 та UC04 (Складські операції)"""
+    """Сервіс для UC01 (Складські операції)"""
 
     @staticmethod
     @transaction.atomic

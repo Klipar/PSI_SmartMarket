@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Tovar, Sarza, NavrhObjednavky, User
+# Додаємо Inventura та ProtokolInventury в список імпортів нижче:
+from .models import Tovar, Sarza, NavrhObjednavky, User, Inventura, ProtokolInventury
 
 class TovarSerializer(serializers.ModelSerializer):
     class Meta:
