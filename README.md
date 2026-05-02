@@ -72,3 +72,11 @@ A web-based solution for smart warehouse management, predictive restocking, and 
 ## API Endpoints
 - Admin Panel: `http://127.0.0.1:8000/admin/`
 - API Root: `http://127.0.0.1:8000/api/`
+
+
+
+# IMPORTANT
+run seeds
+``` bash
+python manage.py seed_db
+```
