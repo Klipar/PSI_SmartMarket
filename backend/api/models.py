@@ -14,6 +14,9 @@ class Dodavatel(models.Model):
     meno = models.CharField(max_length=255)
     email = models.EmailField()
 
+    def __str__(self):
+        return self.meno
+
 class Tovar(models.Model):
     nazov = models.CharField(max_length=255)
     ean_kod = models.CharField(max_length=13, unique=True)
@@ -27,6 +30,9 @@ class Tovar(models.Model):
     def aktualny_stav(self):
         """Розрахунок поточного залишку по всіх партіях"""
         return self.sarze.aggregate(total=models.Sum('mnozstvo'))['total'] or 0
+
+    def __str__(self):
+        return self.nazov
 
 class Sarza(models.Model):
     tovar = models.ForeignKey(Tovar, on_delete=models.CASCADE, related_name='sarze')
@@ -52,16 +58,21 @@ class NavrhObjednavky(models.Model):
     datum_vytvorenia = models.DateTimeField(auto_now_add=True)
 
     def vypocitaj_celkovu_sumu(self):
-        """Метод з UML для розрахунку суми пропозиції"""
-        total = sum(p.cena_pri_objednavke * p.mnozstvo for p in self.polozky.all())
-        return total
+        """Метод для розрахунку суми пропозиції (використовує актуальні поля)"""
+        return sum(p.cena_za_kus * p.navrhovane_mnozstvo for p in self.polozky.all())
 
-class PolozkaNavrhu(models.Model):
-    navrh = models.ForeignKey(NavrhObjednavky, related_name='polozky', on_delete=models.CASCADE)
+    def __str__(self):
+        return f"Objednávka #{self.id} ({self.dodavatel.meno})"
+
+class PolozkaObjednavky(models.Model):
+    """Цей клас замінює PolozkaNavrhu для відповідності UC02"""
+    objednavka = models.ForeignKey(NavrhObjednavky, related_name='polozky', on_delete=models.CASCADE)
     tovar = models.ForeignKey(Tovar, on_delete=models.CASCADE)
-    mnozstvo = models.IntegerField()
-    cena_pri_objednavke = models.DecimalField(max_digits=10, decimal_places=2)
+    navrhovane_mnozstvo = models.IntegerField()
+    cena_za_kus = models.DecimalField(max_digits=10, decimal_places=2)
 
+    def __str__(self):
+        return f"{self.tovar.nazov} - {self.navrhovane_mnozstvo} ks"
 
 class Inventura(models.Model):
     datum_zahajenia = models.DateTimeField(auto_now_add=True)

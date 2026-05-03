@@ -56,34 +56,48 @@ class InventoryService:
             "status": "match" if difference == 0 else "discrepancy"
         }
 
+from django.db.models import F
+from .models import Tovar, NavrhObjednavky, PolozkaObjednavky # Додай PolozkaObjednavky якщо є
+
 class OrderService:
-    """Сервіс для UC02 (Smart-Reorder)"""
-
     @staticmethod
-    @transaction.atomic
     def generate_smart_reorder():
-        """UC02: Автоматичне створення замовлень для товарів нижче ліміту"""
-        from .repositories import InventoryRepository
+        # Шукаємо товари, де кількість менша за мінімальний ліміт
+        # (Припускаємо, що в моделі Tovar є поля: aktualne_mnozstvo, min_mnozstvo, dodavatel)
+        low_stock_items = Tovar.objects.filter(aktualne_mnozstvo__lt=F('min_mnozstvo'))
 
-        low_stock_items = InventoryRepository.get_items_below_limit()
-        created_orders = []
-
-        suppliers_map = {}
+        # 3.1 Zlúčenie objednávok: Групуємо за постачальником
+        supplier_orders = {}
         for tovar in low_stock_items:
-            if tovar.dodavatel:
-                suppliers_map.setdefault(tovar.dodavatel, []).append(tovar)
+            if not tovar.dodavatel:
+                # Виняток: Nedostupný dodávateľ
+                continue
 
-        for supplier, items in suppliers_map.items():
+            if tovar.dodavatel not in supplier_orders:
+                supplier_orders[tovar.dodavatel] = []
+
+            # Розрахунок кількості: наприклад, замовляємо стільки, щоб покрити 2x мінімум
+            mnozstvo_na_objednanie = (tovar.min_mnozstvo * 2) - tovar.aktualne_mnozstvo
+
+            supplier_orders[tovar.dodavatel].append({
+                'tovar': tovar,
+                'mnozstvo': mnozstvo_na_objednanie
+            })
+
+        created_orders = []
+        for supplier, items in supplier_orders.items():
+            # Створюємо драфт замовлення (Výstupné podmienky: stav „Na schválenie“)
             order = NavrhObjednavky.objects.create(
                 dodavatel=supplier,
-                stav=NavrhObjednavky.Status.NA_SCHVALENIE
+                stav='Pending Approval'
             )
 
-            for item in items:
-                order.polozky.create(
-                    tovar=item,
-                    mnozstvo=item.kriticky_limit * 2,
-                    cena_pri_objednavke=0
+            for item_data in items:
+                PolozkaObjednavky.objects.create(
+                    objednavka=order,
+                    tovar=item_data['tovar'],
+                    navrhovane_mnozstvo=item_data['mnozstvo'],
+                    cena_za_kus=item_data['tovar'].aktualna_cena
                 )
             created_orders.append(order)
 
