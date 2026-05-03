@@ -5,6 +5,7 @@ import InventoryReceipt from './pages/InventoryReceipt';
 import ReorderPage from './pages/ReorderPage';
 import InventoryAudit from './pages/InventoryAudit';
 import './App.css';
+import RevaluationPage from './pages/RevaluationPage';
 
 const ROUTES_WITHOUT_SIDEBAR = ['/inventory-receipt', '/', '/inventory-audit'];
 
@@ -21,6 +22,7 @@ function Layout() {
           <Route path="/inventory-receipt" element={<InventoryReceipt />} />
           <Route path="/reorder" element={<ReorderPage />} />
           <Route path="*" element={<div style={{ color: 'white', padding: '20px' }}>404 - Сторінку не знайдено</div>} />
+          <Route path="/revaluation" element={<RevaluationPage />} />
           <Route path="/inventory-audit" element={<InventoryAudit />} />
         </Routes>
       </main>
