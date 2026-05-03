@@ -1,64 +1,68 @@
-* { box-sizing: border-box; margin: 0; padding: 0; }
+/* 1. Глобальні скидання */
+* { 
+  box-sizing: border-box; 
+  margin: 0; 
+  padding: 0; 
+}
 
 body {
   background-color: #0B1426;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #ffffff;
+  overflow: hidden; /* Запобігаємо подвійному скролу на рівні body */
 }
 
+/* 2. Головний контейнер (Flexbox) */
 .app-container {
   display: flex;
   min-height: 100vh;
+  width: 100vw;
   background-color: #0B1426;
 }
 
-.app-sidebar {
+/* 3. Стилі Сайдбара (для десктопа) */
+/* Використовуємо .sidebar, бо такий клас зазвичай у компоненті колеги */
+.sidebar, .app-sidebar {
   width: 260px;
   flex-shrink: 0;
   background-color: #162235;
   border-right: 1px solid rgba(100, 116, 139, 0.2);
+  height: 100vh;
+  position: sticky;
+  top: 0;
 }
 
+/* 4. Основна зона контенту (.app-main як у твоєму JSX) */
 .app-main {
   flex-grow: 1;
-  overflow-y: auto;
-}
-
-@media (max-width: 768px) {
-  .app-container { flex-direction: column; }
-  .app-sidebar { display: none; }
-  .app-main { padding: 0; }
-}
-
-/* Базовий лейаут (Десктоп) */
-.app-container {
-  display: flex;
-  min-height: 100vh;
-  background-color: #0B1426;
-}
-
-/* Контейнер для сторінок */
-.main-content {
-  flex-grow: 1;
-  width: 100%;
   height: 100vh;
-  overflow-y: auto; /* Додаємо скрол, якщо контент довгий */
+  overflow-y: auto; /* Скрол тільки тут */
+  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
-/* === АДАПТАЦІЯ ДЛЯ ТЕЛЕФОНІВ === */
+/* 5. Адаптація для мобільних пристроїв */
 @media (max-width: 768px) {
   .app-container {
     flex-direction: column;
   }
 
-  /* Ховаємо сайдбар на мобільних пристроях. 
-     (Перевір, який клас має головний div всередині Sidebar.jsx, 
-     зазвичай це .sidebar або .app-sidebar) */
+  /* Примусово ховаємо сайдбар на мобільних */
   .sidebar, .app-sidebar {
     display: none !important;
   }
 
-  .main-content {
+  .app-main {
+    width: 100%;
+    height: 100vh;
     padding: 0;
   }
+}
+
+/* Додатковий фікс: якщо сайдбара немає (через ROUTES_WITHOUT_SIDEBAR), 
+   контент має займати 100% без зайвих відступів */
+.app-container:not(:has(.sidebar)) .app-main,
+.app-container:not(:has(.app-sidebar)) .app-main {
+  width: 100%;
 }

@@ -11,7 +11,26 @@ const Sidebar = () => {
       </div>
 
       <div className="sidebar-menu">
-        <p className="menu-label">MENU</p>
+        {/* Новий блок для складських операцій */}
+        <p className="menu-label">OPERATIONS</p>
+        <nav>
+          <NavLink 
+            to="/inventory-receipt" 
+            className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}
+          >
+            <span className="icon">📥</span> Inventory Receipt
+          </NavLink>
+
+          <NavLink 
+            to="/inventory-audit" 
+            className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}
+          >
+            <span className="icon">🔍</span> Inventory Audit
+          </NavLink>
+        </nav>
+
+        {/* Старий блок керування */}
+        <p className="menu-label" style={{ marginTop: '24px' }}>MANAGEMENT</p>
         <nav>
           <NavLink to="/notifications" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
             <span className="icon">🔔</span> Notifications
@@ -32,15 +51,15 @@ const Sidebar = () => {
       </div>
 
       <div className="sidebar-footer">
-  <div className="user-profile">
-    <div className="user-avatar-placeholder">JD</div>
-    <div className="user-info">
-      <span className="user-name">Jason Duong</span>
-      <span className="user-role">Procurement Mgr</span>
-    </div>
-    <span className="chevron">›</span>
-  </div>
-</div>
+        <div className="user-profile">
+          <div className="user-avatar-placeholder">JD</div>
+          <div className="user-info">
+            <span className="user-name">Jason Duong</span>
+            <span className="user-role">Procurement Mgr</span>
+          </div>
+          <span className="chevron">›</span>
+        </div>
+      </div>
     </aside>
   );
 };
