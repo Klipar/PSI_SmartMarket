@@ -4,6 +4,8 @@ import Sidebar from './components/Sidebar';
 import InventoryReceipt from './pages/InventoryReceipt';
 import ReorderPage from './pages/ReorderPage';
 import './App.css';
+import RevaluationPage from './pages/RevaluationPage';
+
 
 function App() {
   return (
@@ -17,6 +19,8 @@ function App() {
             
             {/* Маршрут для UC01: Прийом товару */}
             <Route path="/inventory-receipt" element={<InventoryReceipt />} />
+            
+            <Route path="/revaluation" element={<RevaluationPage />} />
             
             {/* Маршрут для UC02: Розумне замовлення */}
             <Route path="/reorder" element={<ReorderPage />} />
