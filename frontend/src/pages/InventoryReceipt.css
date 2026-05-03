@@ -13,13 +13,6 @@
   --ir-danger-dim:  rgba(239, 68, 68, 0.1);
 }
 
-.receipt-container {
-  text-align: left;
-  width: 100%;
-  max-width: 600px; /* або інша ширина, щоб не розтягувало на весь екран ПК */
-  margin: 0 auto;
-  padding: 20px;
-}
 
 /* Toast */
 .ir-toast {
@@ -212,6 +205,21 @@
   border-radius: 6px;
   border: 1px solid rgba(0, 166, 126, 0.2);
   font-weight: 700;
+}
+
+.receipt-container {
+  /* ДОДАЄМО ЦІ ДВА РЯДКИ: */
+  background-color: var(--ir-bg); 
+  min-height: 100vh; /* щоб темний фон був мінімум на весь екран */
+  
+  /* Твоє існуюче: */
+  text-align: left;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px 20px 120px 20px; /* 120px знизу для футера */
+  display: flex;
+  flex-direction: column;
 }
 
 /* Item Card */
