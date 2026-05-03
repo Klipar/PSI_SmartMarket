@@ -36,10 +36,11 @@ body {
 .app-main {
   flex-grow: 1;
   height: 100vh;
-  overflow-y: auto; /* Скрол тільки тут */
+  overflow-y: auto;
   position: relative;
   display: flex;
   flex-direction: column;
+  background-color: #f1f5f9;
 }
 
 /* 5. Адаптація для мобільних пристроїв */
