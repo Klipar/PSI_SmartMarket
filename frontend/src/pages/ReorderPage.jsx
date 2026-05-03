@@ -11,7 +11,7 @@ const ReorderPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedOrderId, setExpandedOrderId] = useState(null);
 
-  // 1. Завантаження даних з беку
+  // 1. Fetching data from the backend
   const fetchOrders = async () => {
     try {
       const response = await fetch(API_BASE);
@@ -28,7 +28,7 @@ const ReorderPage = () => {
     fetchOrders();
   }, []);
 
-  // UC02: 5.1 Úprava množstva (Запит на бек)
+  // UC02: 5.1 Adjusting quantity (Backend request)
   const handleQuantityChange = async (orderId, itemId, newQty) => {
     try {
       await fetch(`${API_BASE}${orderId}/update_item_quantity/`, {
@@ -36,7 +36,7 @@ const ReorderPage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ item_id: itemId, quantity: newQty })
       });
-      // Оновлюємо локально для миттєвого фідбеку
+      // Refreshing locally for immediate feedback
       fetchOrders();
     } catch (err) { alert("Error updating quantity"); }
   };
@@ -45,21 +45,20 @@ const ReorderPage = () => {
       alert(`Order #${orderId} has been successfully approved and sent to the supplier!`);
       setOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));
 
-      // 3. Закриваємо розширену панель, якщо вона була відкрита
       if (expandedOrderId === orderId) {
         setExpandedOrderId(null);
       }
     };
   // UC02: 6.1 Zamietnutie návrhu
   const handleRejectOrder = async (orderId) => {
-    if (!window.confirm("Are you sure you want to delete this draft?")) return;
+    if (!window.confirm("Are you sure you want to delete this order draft?")) return;
     try {
       await fetch(`${API_BASE}${orderId}/`, { method: 'DELETE' });
       setOrders(orders.filter(o => o.id !== orderId));
     } catch (err) { alert("Delete error"); }
   };
 
-// Експорт у PDF
+  // Export to PDF
   const handleExportPDF = () => {
     try {
       const doc = new jsPDF();
@@ -77,7 +76,7 @@ const ReorderPage = () => {
         order.supplier_name,
         order.items_count,
         `$${Number(order.total_price).toFixed(2)}`,
-        order.stav === 'OD' ? 'Odoslané' : 'Pending'
+        order.stav === 'OD' ? 'Sent' : 'Pending'
       ]);
 
       autoTable(doc, {
@@ -91,11 +90,11 @@ const ReorderPage = () => {
       doc.save("suggested_orders.pdf");
     } catch (error) {
       console.error("PDF Export Error:", error);
-      alert("Помилка при генерації PDF.");
+      alert("Error generating PDF.");
     }
   };
 
-  // Фільтрація (Реактивна)
+  // Filtering (Reactive)
   const filteredOrders = orders.filter(order =>
     order.supplier_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     order.id.toString().includes(searchQuery)
@@ -150,7 +149,7 @@ const ReorderPage = () => {
                   <td>${Number(order.total_price).toFixed(2)}</td>
                   <td>
                     <span className={`status-badge ${order.stav === 'OD' ? 'sent' : 'pending'}`}>
-                      {order.stav === 'OD' ? 'Odoslané' : 'Pending Approval'}
+                      {order.stav === 'OD' ? 'Sent' : 'Pending Approval'}
                     </span>
                   </td>
                   <td>

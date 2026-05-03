@@ -4,11 +4,11 @@ from datetime import timedelta
 from .models import Tovar, Sarza, NavrhObjednavky, User, Inventura, ProtokolInventury
 
 class ExpirationService:
-    """Сервіс для UC03 (Моніторинг та знижки)"""
+    """Service for UC03 (Monitoring and Discounts)"""
 
     @staticmethod
     def get_expiring_soon(days=2):
-        """Знайти партії, що виходять з ладу через X днів"""
+        """Find batches expiring within X days"""
         threshold = timezone.now().date() + timedelta(days=days)
         return Sarza.objects.filter(
             datum_exspiracie__lte=threshold,
@@ -18,34 +18,33 @@ class ExpirationService:
     @staticmethod
     @transaction.atomic
     def apply_batch_discount(sarza_id, discount_percent):
-        """Застосувати знижку до конкретної партії"""
+        """Apply a discount to a specific batch"""
         sarza = Sarza.objects.get(pk=sarza_id)
         sarza.aplikovat_zlavu(discount_percent)
         return sarza
 
 
 class InventoryService:
-    """Сервіс для UC04 (Цифрова інвентаризація)"""
+    """Service for UC04 (Digital Inventory)"""
     @staticmethod
     @transaction.atomic
     def start_inventory(user, kategoria):
-        """Початок інвентаризації (Крок 1-2 сценарію)"""
+        """Start inventory (Steps 1-2 of the scenario)"""
         return Inventura.objects.create(vykonal=user, kategoria=kategoria)
 
     @staticmethod
     @transaction.atomic
     def record_item_check(inventura_id, tovar_id, real_qty):
-        """Порівняння та реєстрація розбіжностей (Крок 3-7 сценарію)"""
+        """Comparison and registration of discrepancies (Steps 3-7 of the scenario)"""
         tovar = Tovar.objects.get(pk=tovar_id)
         system_qty = tovar.aktualny_stav()
         difference = real_qty - system_qty
 
-        # Створюємо протокол, якщо є розбіжність (UC04: 6-7)
         if difference != 0:
             ProtokolInventury.objects.create(
                 inventura_id=inventura_id,
                 zisteny_rozdiel=difference,
-                poznamka=f"Rozdiel pre {tovar.nazov}: Systém {system_qty}, Realita {real_qty}"
+                poznamka=f"Difference for {tovar.nazov}: System {system_qty}, Reality {real_qty}"
             )
 
         return {
@@ -57,26 +56,21 @@ class InventoryService:
         }
 
 from django.db.models import F
-from .models import Tovar, NavrhObjednavky, PolozkaObjednavky # Додай PolozkaObjednavky якщо є
+from .models import Tovar, NavrhObjednavky, PolozkaObjednavky
 
 class OrderService:
     @staticmethod
     def generate_smart_reorder():
-        # Шукаємо товари, де кількість менша за мінімальний ліміт
-        # (Припускаємо, що в моделі Tovar є поля: aktualne_mnozstvo, min_mnozstvo, dodavatel)
         low_stock_items = Tovar.objects.filter(aktualne_mnozstvo__lt=F('min_mnozstvo'))
 
-        # 3.1 Zlúčenie objednávok: Групуємо за постачальником
         supplier_orders = {}
         for tovar in low_stock_items:
             if not tovar.dodavatel:
-                # Виняток: Nedostupný dodávateľ
                 continue
 
             if tovar.dodavatel not in supplier_orders:
                 supplier_orders[tovar.dodavatel] = []
 
-            # Розрахунок кількості: наприклад, замовляємо стільки, щоб покрити 2x мінімум
             mnozstvo_na_objednanie = (tovar.min_mnozstvo * 2) - tovar.aktualne_mnozstvo
 
             supplier_orders[tovar.dodavatel].append({
@@ -86,7 +80,6 @@ class OrderService:
 
         created_orders = []
         for supplier, items in supplier_orders.items():
-            # Створюємо драфт замовлення (Výstupné podmienky: stav „Na schválenie“)
             order = NavrhObjednavky.objects.create(
                 dodavatel=supplier,
                 stav='Pending Approval'
@@ -104,12 +97,12 @@ class OrderService:
         return created_orders
 
 class StockService:
-    """Сервіс для UC01 (Складські операції)"""
+    """Service for UC01 (Warehouse Operations)"""
 
     @staticmethod
     @transaction.atomic
     def receive_new_batch(ean_code, batch_id, quantity, expiration_date, price):
-        """UC01: Прийом нової партії товару"""
+        """UC01: Receiving a new batch of goods"""
         try:
             tovar = Tovar.objects.get(ean_kod=ean_code)
             new_sarza = Sarza.objects.create(
@@ -121,4 +114,4 @@ class StockService:
             )
             return new_sarza
         except Tovar.DoesNotExist:
-            raise ValueError(f"Tovar s EAN {ean_code} neexistuje!")
+            raise ValueError(f"Product with EAN {ean_code} does not exist!")

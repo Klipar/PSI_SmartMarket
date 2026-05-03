@@ -8,10 +8,10 @@ from .services import StockService, OrderService, ExpirationService, InventorySe
 from .serializers import SarzaSerializer, NavrhObjednavkySerializer, InventuraSerializer
 from .models import NavrhObjednavky, Tovar
 
-# --- UC01: ПРИЙОМ ТОВАРУ ---
+# --- UC01: GOODS RECEIPT ---
 class ReceiveBatchView(APIView):
     @extend_schema(
-        summary="Прийом нової партії (UC01)",
+        summary="Receive new batch (UC01)",
         request=inline_serializer(
             name='ReceiveBatchRequest',
             fields={
@@ -42,21 +42,21 @@ class ReceiveBatchView(APIView):
 # --- UC02: SMART REORDER ---
 class SmartReorderView(APIView):
     @extend_schema(
-        summary="Авто-створення замовлень (UC02)",
+        summary="Auto-creation of orders (UC02)",
         responses={201: NavrhObjednavkySerializer(many=True)}
     )
     def post(self, request):
         orders = OrderService.generate_smart_reorder()
         serializer = NavrhObjednavkySerializer(orders, many=True)
         return Response({
-            "message": f"Vytvorených {len(orders)} návrhov objednávok",
+            "message": f"Created {len(orders)} order proposals",
             "orders": serializer.data
         }, status=status.HTTP_201_CREATED)
 
 
-# --- UC03: ЕКСПІРАЦІЯ ТА ЗНИЖКИ ---
+# --- UC03: EXPIRATION AND DISCOUNTS ---
 class ExpiringSoonView(APIView):
-    @extend_schema(summary="Список товарів, що прострочуються (UC03)")
+    @extend_schema(summary="List of items expiring soon (UC03)")
     def get(self, request):
         days = int(request.query_params.get('days', 2))
         items = ExpirationService.get_expiring_soon(days=days)
@@ -64,35 +64,33 @@ class ExpiringSoonView(APIView):
         return Response(serializer.data)
 
     @extend_schema(
-        summary="Застосувати знижку до партії (UC03)",
+        summary="Apply discount to a batch (UC03)",
         request=inline_serializer(
             name='DiscountRequest',
             fields={'discount': serializers.IntegerField(default=50)}
         )
     )
     def patch(self, request, pk):
-        # Переконайтеся, що в urls.py цей маршрут має <int:pk>
         discount = request.data.get('discount', 50)
         updated_sarza = ExpirationService.apply_batch_discount(pk, discount)
         return Response({
-            "message": "Cena aktualizovaná",
+            "message": "Price updated",
             "new_price": str(updated_sarza.aktualna_cena)
         })
 
 
-# --- UC04: ІНВЕНТАРИЗАЦІЯ ---
+# --- UC04: INVENTORY ---
 class InventoryStartView(APIView):
     @extend_schema(
-        summary="Почати інвентаризацію (UC04 Крок 1)",
+        summary="Start inventory (UC04 Step 1)",
         request=inline_serializer(
             name='StartInventoryRequest',
-            fields={'kategoria': serializers.CharField(default='Všetko')}
+            fields={'kategoria': serializers.CharField(default='All')}
         ),
         responses={201: InventuraSerializer}
     )
     def post(self, request):
-        kategoria = request.data.get('kategoria', 'Všetko')
-        # Для тестів, якщо немає авторизації, можна передати None або системного юзера
+        kategoria = request.data.get('kategoria', 'All')
         user = request.user if request.user.is_authenticated else None
         inventura = InventoryService.start_inventory(user, kategoria)
         serializer = InventuraSerializer(inventura)
@@ -101,7 +99,7 @@ class InventoryStartView(APIView):
 
 class InventoryRecordView(APIView):
     @extend_schema(
-        summary="Записати перевірку товару (UC04 Крок 3)",
+        summary="Record item check (UC04 Step 3)",
         request=inline_serializer(
             name='RecordCheckRequest',
             fields={
@@ -111,7 +109,7 @@ class InventoryRecordView(APIView):
         )
     )
     def patch(self, request, pk):
-        """pk — це ID поточної інвентаризації"""
+        """pk is the ID of the current inventory"""
         tovar_id = request.data.get('tovar_id')
         real_qty = int(request.data.get('real_qty', 0))
 
@@ -119,16 +117,16 @@ class InventoryRecordView(APIView):
             result = InventoryService.record_item_check(pk, tovar_id, real_qty)
             return Response(result, status=status.HTTP_200_OK)
         except Tovar.DoesNotExist:
-            return Response({"error": "Tovar nenájdený"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-from .serializers import NavrhObjednavkySerializer # Переконайся, що імпортував оновлений серіалізатор
+
+from .serializers import NavrhObjednavkySerializer
 from .models import NavrhObjednavky
 
-# Додаємо цей клас
 class OrderListView(APIView):
     @extend_schema(
-        summary="Отримати список усіх замовлень",
+        summary="Get list of all orders",
         responses={200: NavrhObjednavkySerializer(many=True)}
     )
     def get(self, request):
@@ -138,33 +136,29 @@ class OrderListView(APIView):
 
 class OrderDetailView(APIView):
     def patch(self, request, pk):
-        # 5.1 Úprava množstva або Зміна статусу
         try:
             order = NavrhObjednavky.objects.get(pk=pk)
             action = request.data.get('action')
 
             if action == 'confirm':
-                # Головний сценарій крок 6-7: Potvrdiť a odoslať
-                order.stav = 'Odoslané'
+                order.stav = 'Sent'
                 order.save()
-                return Response({"message": "Objednávka odoslaná"})
+                return Response({"message": "Order sent"})
 
             elif action == 'update_item':
-                # 5.1 Úprava množstva
                 item_id = request.data.get('item_id')
                 new_qty = request.data.get('quantity')
                 polozka = PolozkaObjednavky.objects.get(id=item_id, objednavka=order)
                 polozka.navrhovane_mnozstvo = new_qty
                 polozka.save()
-                return Response({"message": "Množstvo upravené"})
+                return Response({"message": "Quantity updated"})
 
         except NavrhObjednavky.DoesNotExist:
             return Response(status=404)
 
     def delete(self, request, pk):
-        # 6.1 Zamietnutie návrhu
         NavrhObjednavky.objects.filter(pk=pk).delete()
-        return Response({"message": "Návrh vymazaný"})
+        return Response({"message": "Proposal deleted"})
 
 
 from rest_framework import viewsets, status
@@ -175,17 +169,15 @@ from .serializers import NavrhObjednavkySerializer
 
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = NavrhObjednavky.objects.all().order_by('-datum_vytvorenia')
-    serializer_name = NavrhObjednavkySerializer
+    serializer_class = NavrhObjednavkySerializer
 
-    # UC02: Крок 6-7 (Підтвердження)
     @action(detail=True, methods=['patch'])
     def confirm(self, request, pk=None):
         order = self.get_object()
-        order.stav = 'OD' # Odoslané
+        order.stav = 'SENT' # Sent
         order.save()
         return Response({'status': 'order confirmed'})
 
-    # UC02: Сценарій 5.1 (Оновлення кількості в позиції)
     @action(detail=True, methods=['patch'])
     def update_item_quantity(self, request, pk=None):
         item_id = request.data.get('item_id')

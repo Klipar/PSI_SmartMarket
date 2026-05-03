@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Tovar, Sarza, NavrhObjednavky, PolozkaObjednavky, Inventura, ProtokolInventury
 from rest_framework import serializers
 from django.db.models import Sum, F
+
 class TovarSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tovar
@@ -32,7 +33,6 @@ class PolozkaObjednavkySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PolozkaObjednavky
-        # Використовуємо реальні назви полів з моделі
         fields = ['id', 'tovar', 'tovar_name', 'navrhovane_mnozstvo', 'cena_za_kus']
 
 class NavrhObjednavkySerializer(serializers.ModelSerializer):
@@ -49,7 +49,6 @@ class NavrhObjednavkySerializer(serializers.ModelSerializer):
         return obj.polozky.count()
 
     def get_total_price(self, obj):
-        # ВИПРАВЛЕНО: використовуємо 'navrhovane_mnozstvo' та 'cena_za_kus'
         result = obj.polozky.aggregate(
             total=Sum(F('navrhovane_mnozstvo') * F('cena_za_kus'))
         )['total']

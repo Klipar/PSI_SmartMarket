@@ -5,10 +5,8 @@ const RevaluationPage = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Стан для пошуку
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Стан для модального вікна
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [selectedDiscount, setSelectedDiscount] = useState(50);
@@ -31,7 +29,6 @@ const RevaluationPage = () => {
     fetchExpiringItems();
   }, []);
 
-  // Логіка фільтрації за назвою товару
   const filteredItems = items.filter(item =>
     item.tovar_nazov.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -54,7 +51,7 @@ const RevaluationPage = () => {
         fetchExpiringItems();
       }
     } catch (error) {
-      alert("Помилка при оновленні ціни");
+      alert("Error updating price");
     }
   };
 

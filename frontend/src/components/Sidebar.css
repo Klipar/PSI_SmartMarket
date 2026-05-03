@@ -1,6 +1,6 @@
 .sidebar {
   width: 260px;
-  background-color: #001f3f; /* Темно-синій колір з макету */
+  background-color: #001f3f;
   color: #ffffff;
   display: flex;
   flex-direction: column;
@@ -50,7 +50,7 @@
 .nav-item.active {
   background-color: rgba(255, 255, 255, 0.15);
   color: #ffffff;
-  box-shadow: inset 4px 0 0 #3b82f6; /* Синя полоска зліва */
+  box-shadow: inset 4px 0 0 #3b82f6;
 }
 
 .sidebar-footer {

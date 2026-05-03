@@ -11,25 +11,25 @@ const Sidebar = () => {
       </div>
 
       <div className="sidebar-menu">
-        {/* Новий блок для складських операцій */}
+        {/* New block for warehouse operations */}
         <p className="menu-label">OPERATIONS</p>
         <nav>
-          <NavLink 
-            to="/inventory-receipt" 
+          <NavLink
+            to="/inventory-receipt"
             className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}
           >
             <span className="icon">📥</span> Inventory Receipt
           </NavLink>
 
-          <NavLink 
-            to="/inventory-audit" 
+          <NavLink
+            to="/inventory-audit"
             className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}
           >
             <span className="icon">🔍</span> Inventory Audit
           </NavLink>
         </nav>
 
-        {/* Старий блок керування */}
+        {/* Legacy management block */}
         <p className="menu-label" style={{ marginTop: '24px' }}>MANAGEMENT</p>
         <nav>
           <NavLink to="/notifications" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>

@@ -14,9 +14,8 @@ function Layout() {
   const isDarkPage = DARK_PAGES.includes(location.pathname);
   const showSidebar = !DARK_PAGES.includes(location.pathname);
 
-  // Створюємо об'єкт стилів для перекриття фону
   const mainStyle = isDarkPage ? {
-    backgroundColor: '#0B1426', // Твій темний колір
+    backgroundColor: '#0B1426',
     minHeight: '100vh',
     width: '100%',
     transition: 'background-color 0.2s ease'
@@ -25,8 +24,8 @@ function Layout() {
   return (
     <div className="app-container">
       {showSidebar && <Sidebar />}
-      
-      {/* Накидаємо style прямо на тег main */}
+
+      {/* We apply style directly to the main tag */}
       <main className="app-main" style={mainStyle}>
         <Routes>
           <Route path="/" element={<InventoryReceipt />} />
@@ -34,7 +33,7 @@ function Layout() {
           <Route path="/reorder" element={<ReorderPage />} />
           <Route path="/revaluation" element={<RevaluationPage />} />
           <Route path="/inventory-audit" element={<InventoryAudit />} />
-          <Route path="*" element={<div style={{ color: 'white', padding: '20px' }}>404 - Сторінку не знайдено</div>} />
+          <Route path="*" element={<div style={{ color: 'white', padding: '20px' }}>404 - Page not found</div>} />
         </Routes>
       </main>
     </div>

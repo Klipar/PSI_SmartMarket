@@ -1,18 +1,16 @@
-/* 1. Глобальні скидання */
-* { 
-  box-sizing: border-box; 
-  margin: 0; 
-  padding: 0; 
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
   background-color: #0B1426;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #ffffff;
-  overflow: hidden; /* Запобігаємо подвійному скролу на рівні body */
+  overflow: hidden;
 }
 
-/* 2. Головний контейнер (Flexbox) */
 .app-container {
   display: flex;
   min-height: 100vh;
@@ -20,8 +18,6 @@ body {
   background-color: #0B1426;
 }
 
-/* 3. Стилі Сайдбара (для десктопа) */
-/* Використовуємо .sidebar, бо такий клас зазвичай у компоненті колеги */
 .sidebar, .app-sidebar {
   width: 260px;
   flex-shrink: 0;
@@ -32,7 +28,6 @@ body {
   top: 0;
 }
 
-/* 4. Основна зона контенту (.app-main як у твоєму JSX) */
 .app-main {
   flex-grow: 1;
   height: 100vh;
@@ -49,13 +44,11 @@ body {
   width: 100%;
 }
 
-/* 5. Адаптація для мобільних пристроїв */
 @media (max-width: 768px) {
   .app-container {
     flex-direction: column;
   }
 
-  /* Примусово ховаємо сайдбар на мобільних */
   .sidebar, .app-sidebar {
     display: none !important;
   }
@@ -67,8 +60,6 @@ body {
   }
 }
 
-/* Додатковий фікс: якщо сайдбара немає (через ROUTES_WITHOUT_SIDEBAR), 
-   контент має займати 100% без зайвих відступів */
 .app-container:not(:has(.sidebar)) .app-main,
 .app-container:not(:has(.app-sidebar)) .app-main {
   width: 100%;

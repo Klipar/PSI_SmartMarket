@@ -9,7 +9,7 @@ const InventoryAudit = () => {
   const navigate = useNavigate();
 
   const [inventuraId, setInventuraId] = useState(null);
-  const [kategoria, setKategoria] = useState('Všetko');
+  const [kategoria, setKategoria] = useState('All');
   const [started, setStarted] = useState(false);
   const [startLoading, setStartLoading] = useState(false);
 
@@ -27,7 +27,7 @@ const InventoryAudit = () => {
     toastTimer.current = setTimeout(() => setToast(null), 2500);
   };
 
-  // Крок 1 — Почати інвентаризацію
+  // Step 1 — Start inventory
   const handleStart = async () => {
     setStartLoading(true);
     try {
@@ -48,7 +48,7 @@ const InventoryAudit = () => {
     }
   };
 
-  // Додати товар вручну по ID/SKU
+  // Add item manually by ID/SKU
   const handleAddManual = () => {
     const val = manualSku.trim();
     if (!val) return;
@@ -79,7 +79,7 @@ const InventoryAudit = () => {
     setItems(prev => prev.filter(i => i.tovarId !== tovarId));
   };
 
-  // Крок 2 — Записати перевірку одного товару
+  // Step 2 — Record check for a single item
   const handleCheck = async (item) => {
     if (!inventuraId) { showToast('Start inventory first', 'error'); return; }
     setCheckingId(item.tovarId);
@@ -133,7 +133,7 @@ const InventoryAudit = () => {
         </div>
       </div>
 
-      {/* Крок 1: старт */}
+      {/* Step 1: Start section */}
       {!started ? (
         <div className="audit-start-block">
           <p className="audit-section-label">Category</p>
@@ -143,7 +143,7 @@ const InventoryAudit = () => {
               value={kategoria}
               onChange={e => setKategoria(e.target.value)}
               placeholder="e.g. Bearings, All..."
-            />
+            /> {/* Правильно закритий тег */}
           </div>
           <button className="audit-start-btn" onClick={handleStart} disabled={startLoading}>
             {startLoading ? 'Starting...' : 'Start Inventory'}
@@ -152,7 +152,7 @@ const InventoryAudit = () => {
       ) : (
         <div className="audit-body">
 
-          {/* Прогрес */}
+          {/* Progress */}
           <div className="audit-progress-row">
             <span className="audit-section-label">
               Checked {checkedCount}/{items.length} items
@@ -165,7 +165,7 @@ const InventoryAudit = () => {
             </div>
           </div>
 
-          {/* Кнопка сканування */}
+          {/* Scan button */}
           <button className="audit-scan-btn" onClick={() => showToast('Scanner coming soon', 'success')}>
             <Barcode size={28} />
             <span>Scan Barcode</span>
@@ -173,7 +173,7 @@ const InventoryAudit = () => {
 
           <p className="audit-divider">— or add manually —</p>
 
-          {/* Мануальне введення */}
+          {/* Manual input */}
           <div className="audit-manual-row">
             <div className="audit-manual-input-wrap">
               <Search size={15} className="audit-search-icon" />
@@ -191,7 +191,7 @@ const InventoryAudit = () => {
             </button>
           </div>
 
-          {/* Список */}
+          {/* Items list */}
           {items.length === 0 && (
             <p className="audit-empty">No items yet. Scan or add manually.</p>
           )}
