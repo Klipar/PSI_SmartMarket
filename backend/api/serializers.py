@@ -1,7 +1,7 @@
 from rest_framework import serializers
-# Додаємо Inventura та ProtokolInventury в список імпортів нижче:
-from .models import Tovar, Sarza, NavrhObjednavky, User, Inventura, ProtokolInventury
-
+from .models import Tovar, Sarza, NavrhObjednavky, PolozkaObjednavky, Inventura, ProtokolInventury
+from rest_framework import serializers
+from django.db.models import Sum, F
 class TovarSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tovar
@@ -14,29 +14,6 @@ class SarzaSerializer(serializers.ModelSerializer):
         model = Sarza
         fields = ['id', 'tovar', 'tovar_nazov', 'id_sarze', 'mnozstvo', 'datum_exspiracie', 'aktualna_cena']
 
-class OrderSerializer(serializers.ModelSerializer):
-    # Отримуємо ім'я постачальника з пов'язаної моделі Dodavatel
-    dodavatel_meno = serializers.ReadOnlyField(source='dodavatel.meno')
-    # Рахуємо кількість позицій у замовленні
-    items_count = serializers.SerializerMethodField()
-    # Рахуємо загальну суму замовлення
-    total_price = serializers.SerializerMethodField()
-
-    class Meta:
-        model = NavrhObjednavky
-        fields = ['id', 'stav', 'datum_vytvorenia', 'dodavatel', 'dodavatel_meno', 'items_count', 'total_price']
-
-    def get_items_count(self, obj):
-        # Рахуємо кількість PolozkaNavrhu для цього замовлення
-        return obj.polozky.count()
-
-    def get_total_price(self, obj):
-        # Сумуємо (ціна * кількість) для всіх позицій
-        from django.db.models import F, Sum
-        total = obj.polozky.aggregate(
-            total=Sum(F('mnozstvo') * F('cena_pri_objednavke'))
-        )['total']
-        return float(total) if total else 0.0
 
 class InventuraSerializer(serializers.ModelSerializer):
     vykonal_meno = serializers.ReadOnlyField(source='vykonal.username')
@@ -49,3 +26,31 @@ class ProtokolSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProtokolInventury
         fields = '__all__'
+
+class PolozkaObjednavkySerializer(serializers.ModelSerializer):
+    tovar_name = serializers.ReadOnlyField(source='tovar.nazov')
+
+    class Meta:
+        model = PolozkaObjednavky
+        # Використовуємо реальні назви полів з моделі
+        fields = ['id', 'tovar', 'tovar_name', 'navrhovane_mnozstvo', 'cena_za_kus']
+
+class NavrhObjednavkySerializer(serializers.ModelSerializer):
+    polozky = PolozkaObjednavkySerializer(many=True, read_only=True)
+    supplier_name = serializers.ReadOnlyField(source='dodavatel.meno')
+    items_count = serializers.SerializerMethodField()
+    total_price = serializers.SerializerMethodField()
+
+    class Meta:
+        model = NavrhObjednavky
+        fields = ['id', 'stav', 'supplier_name', 'datum_vytvorenia', 'polozky', 'items_count', 'total_price']
+
+    def get_items_count(self, obj):
+        return obj.polozky.count()
+
+    def get_total_price(self, obj):
+        # ВИПРАВЛЕНО: використовуємо 'navrhovane_mnozstvo' та 'cena_za_kus'
+        result = obj.polozky.aggregate(
+            total=Sum(F('navrhovane_mnozstvo') * F('cena_za_kus'))
+        )['total']
+        return result or 0

@@ -1,19 +1,25 @@
 import React, { useState, useEffect } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import './ReorderPage.css';
+
+const API_BASE = "http://localhost:8000/api/orders/";
 
 const ReorderPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
 
+  // 1. Завантаження даних з беку
   const fetchOrders = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/orders/');
-      if (response.ok) {
-        const data = await response.json();
-        setOrders(data);
-      }
-    } catch (error) {
-      console.error("Fetch error:", error);
-    } finally {
+      const response = await fetch(API_BASE);
+      const data = await response.json();
+      setOrders(data);
+      setLoading(false);
+    } catch (err) {
+      console.error("Fetch error:", err);
       setLoading(false);
     }
   };
@@ -22,114 +28,183 @@ const ReorderPage = () => {
     fetchOrders();
   }, []);
 
-  const handleSmartReorder = async () => {
-    setLoading(true);
+  // UC02: 5.1 Úprava množstva (Запит на бек)
+  const handleQuantityChange = async (orderId, itemId, newQty) => {
     try {
-      await fetch('http://127.0.0.1:8000/api/orders/smart-reorder/', {
-        method: 'POST',
-        headers: { 'accept': 'application/json' },
+      await fetch(`${API_BASE}${orderId}/update_item_quantity/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_id: itemId, quantity: newQty })
       });
-      await fetchOrders(); // Оновлюємо список
+      // Оновлюємо локально для миттєвого фідбеку
+      fetchOrders();
+    } catch (err) { alert("Error updating quantity"); }
+  };
+
+    const handleConfirmOrder = async (orderId) => {
+      alert(`Order #${orderId} has been successfully approved and sent to the supplier!`);
+      setOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));
+
+      // 3. Закриваємо розширену панель, якщо вона була відкрита
+      if (expandedOrderId === orderId) {
+        setExpandedOrderId(null);
+      }
+    };
+  // UC02: 6.1 Zamietnutie návrhu
+  const handleRejectOrder = async (orderId) => {
+    if (!window.confirm("Are you sure you want to delete this draft?")) return;
+    try {
+      await fetch(`${API_BASE}${orderId}/`, { method: 'DELETE' });
+      setOrders(orders.filter(o => o.id !== orderId));
+    } catch (err) { alert("Delete error"); }
+  };
+
+// Експорт у PDF
+  const handleExportPDF = () => {
+    try {
+      const doc = new jsPDF();
+
+      doc.setFontSize(18);
+      doc.text("Suggested Orders Report", 14, 22);
+
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+
+      const tableColumn = ["Order ID", "Supplier", "Items Count", "Total Price", "Status"];
+      const tableRows = filteredOrders.map(order => [
+        `#${order.id}`,
+        order.supplier_name,
+        order.items_count,
+        `$${Number(order.total_price).toFixed(2)}`,
+        order.stav === 'OD' ? 'Odoslané' : 'Pending'
+      ]);
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 35,
+        theme: 'grid',
+        headStyles: { fillColor: [37, 99, 235] },
+      });
+
+      doc.save("suggested_orders.pdf");
     } catch (error) {
-      alert("Error generating orders");
-    } finally {
-      setLoading(false);
+      console.error("PDF Export Error:", error);
+      alert("Помилка при генерації PDF.");
     }
   };
 
+  // Фільтрація (Реактивна)
+  const filteredOrders = orders.filter(order =>
+    order.supplier_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    order.id.toString().includes(searchQuery)
+  );
+
+  if (loading) return <div className="loading">Connecting to SmartMarket Backend...</div>;
+
   return (
-    <div style={styles.container}>
-      {/* Header як на макеті */}
-      <div style={styles.header}>
-        <div>
-          <h1 style={styles.title}>Suggested Orders</h1>
-          <p style={styles.subtitle}>Review and approve automated reorder drafts based on current inventory level</p>
+    <div className="reorder-container">
+      <header className="page-header">
+        <div className="header-text">
+          <h1>Suggested Orders</h1>
+          <p>Review and approve automated reorder drafts</p>
         </div>
-        <div style={styles.headerActions}>
-          <button style={styles.btnOutline}>Filter</button>
-          <button style={styles.btnOutline}>Export</button>
-          <button style={styles.btnPrimary} onClick={handleSmartReorder}>+ New Order</button>
+        <div className="header-actions">
+          <button className="btn-secondary" onClick={() => fetchOrders()}>🔄 Refresh</button>
+          <button className="btn-secondary" onClick={handleExportPDF}>📤 Export PDF</button>
         </div>
-      </div>
+      </header>
 
-      {/* Таблиця */}
-      <div style={styles.card}>
-        <div style={styles.tableFilterBar}>
-          <span style={styles.statusChip}>Status: Pending Approval ✕</span>
-          <input type="text" placeholder="Search table" style={styles.searchInput} />
+      <div className="table-card">
+        <div className="table-controls">
+          <div className="search-wrapper">
+            <span className="search-icon">🔍</span>
+            <input
+              type="text"
+              placeholder="Search by supplier or ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
         </div>
 
-        <table style={styles.table}>
+        <table className="reorder-table">
           <thead>
-            <tr style={styles.tableHeadRow}>
-              <th style={styles.th}><input type="checkbox" /></th>
-              <th style={styles.th}>SUPPLIER</th>
-              <th style={styles.th}>ITEMS COUNT</th>
-              <th style={styles.th}>TOTAL PRICE</th>
-              <th style={styles.th}>STATUS</th>
-              <th style={styles.th}>ACTIONS</th>
+            <tr>
+              <th>ID</th>
+              <th>SUPPLIER</th>
+              <th>ITEMS</th>
+              <th>TOTAL</th>
+              <th>STATUS</th>
+              <th>ACTIONS</th>
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr><td colSpan="6" style={{textAlign:'center', padding:'20px'}}>Loading data...</td></tr>
-            ) : orders.length > 0 ? (
-              orders.map(order => (
-                <tr key={order.id} style={styles.tr}>
-                  <td style={styles.td}><input type="checkbox" /></td>
-                  <td style={styles.td}>
-                    <div style={styles.supplierCell}>
-                      <div style={styles.avatar}>FC</div>
-                      <div>
-                        <div style={styles.supplierName}>{order.dodavatel_meno || 'Supplier'}</div>
-                        <div style={styles.orderId}>ID: #ORD-{order.id}</div>
-                      </div>
-                    </div>
+            {filteredOrders.map((order) => (
+              <React.Fragment key={order.id}>
+                <tr>
+                  <td>#{order.id}</td>
+                  <td><strong>{order.supplier_name}</strong></td>
+                  <td>{order.items_count} items</td>
+                  <td>${Number(order.total_price).toFixed(2)}</td>
+                  <td>
+                    <span className={`status-badge ${order.stav === 'OD' ? 'sent' : 'pending'}`}>
+                      {order.stav === 'OD' ? 'Odoslané' : 'Pending Approval'}
+                    </span>
                   </td>
-                  <td style={styles.td}>{order.items_count} items</td>
-                  <td style={styles.td}><strong>${order.total_price}</strong></td>
-                  <td style={styles.td}>
-                    <span style={styles.badgePending}>Pending Approval</span>
-                  </td>
-                  <td style={styles.td}>
-                    <button style={styles.btnView}>View</button>
+                  <td>
+                    <button className="view-btn" onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}>
+                      {expandedOrderId === order.id ? 'Hide' : 'Review'}
+                    </button>
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr><td colSpan="6" style={{textAlign:'center', padding:'20px'}}>No suggested orders found.</td></tr>
-            )}
+
+                {expandedOrderId === order.id && (
+                  <tr className="order-details-row">
+                    <td colSpan="6">
+                      <div className="order-details-card">
+                        <table className="inner-table">
+                          <thead>
+                            <tr><th>Item</th><th>Price</th><th>Quantity</th><th>Subtotal</th></tr>
+                          </thead>
+                          <tbody>
+                            {order.polozky.map(item => (
+                              <tr key={item.id}>
+                                <td>{item.tovar_name}</td>
+                                <td>${item.cena_za_kus}</td>
+                                <td>
+                                  <input
+                                    type="number"
+                                    className="qty-input"
+                                    defaultValue={item.navrhovane_mnozstvo}
+                                    onBlur={(e) => handleQuantityChange(order.id, item.id, e.target.value)}
+                                  />
+                                </td>
+                                <td>${(item.cena_za_kus * item.navrhovane_mnozstvo).toFixed(2)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        <div className="order-actions">
+                          {order.stav !== 'OD' && (
+                            <>
+                              <button className="btn-danger" onClick={() => handleRejectOrder(order.id)}>Reject</button>
+                              <button className="btn-success" onClick={() => handleConfirmOrder(order.id)}>Approve & Send</button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            ))}
           </tbody>
         </table>
       </div>
     </div>
   );
-};
-
-// Об'єкт зі стилями (CSS-in-JS) для швидкого результату
-const styles = {
-  container: { padding: '32px', backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'Inter, system-ui, sans-serif' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' },
-  title: { fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#1e293b' },
-  subtitle: { color: '#64748b', margin: '4px 0 0 0' },
-  headerActions: { display: 'flex', gap: '12px' },
-  btnPrimary: { backgroundColor: '#2563eb', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' },
-  btnOutline: { backgroundColor: 'white', color: '#1e293b', border: '1px solid #e2e8f0', padding: '10px 18px', borderRadius: '6px', cursor: 'pointer' },
-  card: { backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden' },
-  tableFilterBar: { padding: '16px', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '12px' },
-  statusChip: { backgroundColor: '#f1f5f9', padding: '6px 12px', borderRadius: '20px', fontSize: '14px', color: '#475569' },
-  searchInput: { padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', width: '200px' },
-  table: { width: '100%', borderCollapse: 'collapse', textAlign: 'left' },
-  tableHeadRow: { backgroundColor: '#f8fafc' },
-  th: { padding: '12px 16px', fontSize: '12px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase' },
-  tr: { borderBottom: '1px solid #f1f5f9' },
-  td: { padding: '16px', color: '#1e293b', verticalAlign: 'middle' },
-  supplierCell: { display: 'flex', alignItems: 'center', gap: '12px' },
-  avatar: { width: '36px', height: '36px', backgroundColor: '#eff6ff', color: '#2563eb', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' },
-  supplierName: { fontWeight: '600' },
-  orderId: { fontSize: '12px', color: '#64748b' },
-  badgePending: { backgroundColor: '#fef3c7', color: '#92400e', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '500' },
-  btnView: { background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontWeight: '600' }
 };
 
 export default ReorderPage;

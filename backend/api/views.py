@@ -5,7 +5,7 @@ from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers
 
 from .services import StockService, OrderService, ExpirationService, InventoryService
-from .serializers import SarzaSerializer, OrderSerializer, InventuraSerializer
+from .serializers import SarzaSerializer, NavrhObjednavkySerializer, InventuraSerializer
 from .models import NavrhObjednavky, Tovar
 
 # --- UC01: ПРИЙОМ ТОВАРУ ---
@@ -43,11 +43,11 @@ class ReceiveBatchView(APIView):
 class SmartReorderView(APIView):
     @extend_schema(
         summary="Авто-створення замовлень (UC02)",
-        responses={201: OrderSerializer(many=True)}
+        responses={201: NavrhObjednavkySerializer(many=True)}
     )
     def post(self, request):
         orders = OrderService.generate_smart_reorder()
-        serializer = OrderSerializer(orders, many=True)
+        serializer = NavrhObjednavkySerializer(orders, many=True)
         return Response({
             "message": f"Vytvorených {len(orders)} návrhov objednávok",
             "orders": serializer.data
@@ -122,16 +122,78 @@ class InventoryRecordView(APIView):
             return Response({"error": "Tovar nenájdený"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-from .serializers import OrderSerializer # Переконайся, що імпортував оновлений серіалізатор
+from .serializers import NavrhObjednavkySerializer # Переконайся, що імпортував оновлений серіалізатор
 from .models import NavrhObjednavky
 
 # Додаємо цей клас
 class OrderListView(APIView):
     @extend_schema(
         summary="Отримати список усіх замовлень",
-        responses={200: OrderSerializer(many=True)}
+        responses={200: NavrhObjednavkySerializer(many=True)}
     )
     def get(self, request):
         orders = NavrhObjednavky.objects.all().order_by('-datum_vytvorenia')
-        serializer = OrderSerializer(orders, many=True)
+        serializer = NavrhObjednavkySerializer(orders, many=True)
         return Response(serializer.data)
+
+class OrderDetailView(APIView):
+    def patch(self, request, pk):
+        # 5.1 Úprava množstva або Зміна статусу
+        try:
+            order = NavrhObjednavky.objects.get(pk=pk)
+            action = request.data.get('action')
+
+            if action == 'confirm':
+                # Головний сценарій крок 6-7: Potvrdiť a odoslať
+                order.stav = 'Odoslané'
+                order.save()
+                return Response({"message": "Objednávka odoslaná"})
+
+            elif action == 'update_item':
+                # 5.1 Úprava množstva
+                item_id = request.data.get('item_id')
+                new_qty = request.data.get('quantity')
+                polozka = PolozkaObjednavky.objects.get(id=item_id, objednavka=order)
+                polozka.navrhovane_mnozstvo = new_qty
+                polozka.save()
+                return Response({"message": "Množstvo upravené"})
+
+        except NavrhObjednavky.DoesNotExist:
+            return Response(status=404)
+
+    def delete(self, request, pk):
+        # 6.1 Zamietnutie návrhu
+        NavrhObjednavky.objects.filter(pk=pk).delete()
+        return Response({"message": "Návrh vymazaný"})
+
+
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from .models import NavrhObjednavky, PolozkaObjednavky
+from .serializers import NavrhObjednavkySerializer
+
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = NavrhObjednavky.objects.all().order_by('-datum_vytvorenia')
+    serializer_name = NavrhObjednavkySerializer
+
+    # UC02: Крок 6-7 (Підтвердження)
+    @action(detail=True, methods=['patch'])
+    def confirm(self, request, pk=None):
+        order = self.get_object()
+        order.stav = 'OD' # Odoslané
+        order.save()
+        return Response({'status': 'order confirmed'})
+
+    # UC02: Сценарій 5.1 (Оновлення кількості в позиції)
+    @action(detail=True, methods=['patch'])
+    def update_item_quantity(self, request, pk=None):
+        item_id = request.data.get('item_id')
+        new_qty = request.data.get('quantity')
+        try:
+            item = PolozkaObjednavky.objects.get(id=item_id, objednavka_id=pk)
+            item.navrhovane_mnozstvo = new_qty
+            item.save()
+            return Response({'status': 'quantity updated'})
+        except PolozkaObjednavky.DoesNotExist:
+            return Response(status=404)
