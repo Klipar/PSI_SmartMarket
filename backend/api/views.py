@@ -6,7 +6,7 @@ from rest_framework import serializers
 
 from .services import StockService, OrderService, ExpirationService, InventoryService
 from .serializers import SarzaSerializer, OrderSerializer, InventuraSerializer
-from .models import Tovar
+from .models import NavrhObjednavky, Tovar
 
 # --- UC01: ПРИЙОМ ТОВАРУ ---
 class ReceiveBatchView(APIView):
@@ -122,3 +122,16 @@ class InventoryRecordView(APIView):
             return Response({"error": "Tovar nenájdený"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+from .serializers import OrderSerializer # Переконайся, що імпортував оновлений серіалізатор
+from .models import NavrhObjednavky
+
+# Додаємо цей клас
+class OrderListView(APIView):
+    @extend_schema(
+        summary="Отримати список усіх замовлень",
+        responses={200: OrderSerializer(many=True)}
+    )
+    def get(self, request):
+        orders = NavrhObjednavky.objects.all().order_by('-datum_vytvorenia')
+        serializer = OrderSerializer(orders, many=True)
+        return Response(serializer.data)
