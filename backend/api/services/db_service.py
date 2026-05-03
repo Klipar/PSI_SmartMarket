@@ -4,7 +4,7 @@ from .models import Tovar, Sarza, NavrhObjednavky, Dodavatel
 
 class DBService:
     """
-    Центральний сервіс для керування БД та високорівневих операцій ORM
+    A central service for database management and high-level ORM operations
     """
 
     @staticmethod
