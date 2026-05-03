@@ -75,7 +75,7 @@ class ExpiringSoonView(APIView):
         discount = request.data.get('discount', 50)
         updated_sarza = ExpirationService.apply_batch_discount(pk, discount)
         return Response({
-            "message": "Cena aktualizovaná", 
+            "message": "Cena aktualizovaná",
             "new_price": str(updated_sarza.aktualna_cena)
         })
 
