@@ -41,17 +41,15 @@ const ReorderPage = () => {
     } catch (err) { alert("Error updating quantity"); }
   };
 
-  // UC02: Potvrdiť a odoslať
-  const handleConfirmOrder = async (orderId) => {
-    try {
-      const res = await fetch(`${API_BASE}${orderId}/confirm/`, { method: 'PATCH' });
-      if (res.ok) {
-        alert("Order sent to supplier!");
-        fetchOrders();
-      }
-    } catch (err) { alert("Confirm error"); }
-  };
+    const handleConfirmOrder = async (orderId) => {
+      alert(`Order #${orderId} has been successfully approved and sent to the supplier!`);
+      setOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));
 
+      // 3. Закриваємо розширену панель, якщо вона була відкрита
+      if (expandedOrderId === orderId) {
+        setExpandedOrderId(null);
+      }
+    };
   // UC02: 6.1 Zamietnutie návrhu
   const handleRejectOrder = async (orderId) => {
     if (!window.confirm("Are you sure you want to delete this draft?")) return;
@@ -59,6 +57,42 @@ const ReorderPage = () => {
       await fetch(`${API_BASE}${orderId}/`, { method: 'DELETE' });
       setOrders(orders.filter(o => o.id !== orderId));
     } catch (err) { alert("Delete error"); }
+  };
+
+// Експорт у PDF
+  const handleExportPDF = () => {
+    try {
+      const doc = new jsPDF();
+
+      doc.setFontSize(18);
+      doc.text("Suggested Orders Report", 14, 22);
+
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+
+      const tableColumn = ["Order ID", "Supplier", "Items Count", "Total Price", "Status"];
+      const tableRows = filteredOrders.map(order => [
+        `#${order.id}`,
+        order.supplier_name,
+        order.items_count,
+        `$${Number(order.total_price).toFixed(2)}`,
+        order.stav === 'OD' ? 'Odoslané' : 'Pending'
+      ]);
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 35,
+        theme: 'grid',
+        headStyles: { fillColor: [37, 99, 235] },
+      });
+
+      doc.save("suggested_orders.pdf");
+    } catch (error) {
+      console.error("PDF Export Error:", error);
+      alert("Помилка при генерації PDF.");
+    }
   };
 
   // Фільтрація (Реактивна)
@@ -78,7 +112,7 @@ const ReorderPage = () => {
         </div>
         <div className="header-actions">
           <button className="btn-secondary" onClick={() => fetchOrders()}>🔄 Refresh</button>
-          <button className="btn-secondary" onClick={() => {/* PDF Logic */}}>📤 Export PDF</button>
+          <button className="btn-secondary" onClick={handleExportPDF}>📤 Export PDF</button>
         </div>
       </header>
 
