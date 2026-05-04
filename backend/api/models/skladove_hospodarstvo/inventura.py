@@ -1,5 +1,5 @@
 from django.db import models
-from .users import User
+from ..pouzivatelia.users import User
 
 class Inventura(models.Model):
     datum_zahajenia = models.DateTimeField(auto_now_add=True)

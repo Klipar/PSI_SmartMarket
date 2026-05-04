@@ -1,7 +1,7 @@
 from django.db import models
 from datetime import date
 from typing import List
-from . import Sarza
+from ..skladove_hospodarstvo.sarza import Sarza
 
 class SpravaOExspiracii(models.Model):
     _datumGenerovania: date = date.today()

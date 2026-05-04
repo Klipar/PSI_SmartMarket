@@ -1,6 +1,7 @@
 from django.db import models
 from typing import List
-from . import SpravaOExspiracii, Tovar
+from .sprava_o_expiracii import SpravaOExspiracii
+from ..skladove_hospodarstvo.tovar import Tovar
 
 class SystemovyMonitor(models.Model):
     _interval: int = 0

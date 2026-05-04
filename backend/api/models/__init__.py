@@ -1,19 +1,18 @@
-from .users import User
-from .dodavatel import Dodavatel
-from .skladovy_zoznam import SkladovyZoznam
+from .objednavkovy_system.dodavatel import Dodavatel
+from .objednavkovy_system.navrh_objednavky import NavrhObjednavky
+from .objednavkovy_system.polozka_objednavky import PolozkaObjednavky
 
-from .tovar import Tovar
-from .sarza import Sarza
+from .systemove_sluzby.objednavka import Objednavka
+from .systemove_sluzby.sprava_o_expiracii import SpravaOExspiracii
+from .systemove_sluzby.systemovy_monitor import SystemovyMonitor
 
-from .navrh_objednavky import NavrhObjednavky
-from .objednavka import Objednavka
-from .polozka_objednavky import PolozkaObjednavky
+from .skladove_hospodarstvo.tovar import Tovar
+from .skladove_hospodarstvo.sarza import Sarza
+from .skladove_hospodarstvo.inventura import Inventura
+from .skladove_hospodarstvo.protokol_inventury import ProtokolInventury
+from .skladove_hospodarstvo.skladovy_zoznam import SkladovyZoznam
 
-from .inventura import Inventura
-from .protokol_inventury import ProtokolInventury
-
-from .sprava_o_expiracii import SpravaOExspiracii
-from .systemovy_monitor import SystemovyMonitor
+from .pouzivatelia.users import User
 
 __all__ = [
     'User',

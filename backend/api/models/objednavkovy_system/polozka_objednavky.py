@@ -1,6 +1,6 @@
 from django.db import models
 from .navrh_objednavky import NavrhObjednavky
-from .tovar import Tovar
+from ..skladove_hospodarstvo.tovar import Tovar
 
 class PolozkaObjednavky(models.Model):
     objednavka = models.ForeignKey(NavrhObjednavky, related_name='polozky', on_delete=models.CASCADE)

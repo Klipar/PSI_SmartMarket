@@ -1,5 +1,5 @@
 from django.db import models
-from . import Dodavatel
+from ..objednavkovy_system.dodavatel import Dodavatel
 
 class Tovar(models.Model):
     nazov = models.CharField(max_length=255)
