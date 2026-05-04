@@ -1,82 +1,77 @@
-# SmartMarket
-
-A web-based solution for smart warehouse management, predictive restocking, and expiration date monitoring. Built with Django (Backend) and React (Frontend).
-
-## Project Structure
-- `/backend` - Django REST Framework API
-- `/frontend` - React.js + Vite
-
----
-
 ## Prerequisites
-- **Python 3.10+**
-- **Node.js (v18+)** & **npm**
-- **Virtualenv** (`pip install virtualenv`)
+
+- Python 3.10+
+- Node.js v18+ and npm
+- pip and virtualenv
 
 ---
 
-## Backend Setup (Django)
+## Backend Setup
 
-1. **Navigate to backend directory:**
-   ```bash
-   cd backend
-   ```
+### 1. Navigate to the backend directory
+cd backend
 
-2. **Create and activate virtual environment:**
-   ```bash
-   python -m venv venv
-   # Windows:
-   venv\Scripts\activate
-   # Linux/macOS:
-   source venv/bin/activate
-   ```
+### 2. Create and activate a virtual environment
+python -m venv venv
 
-3. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-   *Note: If requirements.txt is missing, install manually: `pip install django djangorestframework django-cors-headers`*
+# macOS / Linux:
+source venv/bin/activate
 
-4. **Apply migrations:**
-   ```bash
-   python manage.py migrate
-   ```
+# Windows:
+venv\Scripts\activate
 
-5. **Run the server:**
-   ```bash
-   python manage.py runserver 8000
-   ```
+### 3. Install dependencies
+pip install -r requirements.txt
 
----
+### 4. Apply database migrations
+python manage.py migrate
 
-## Frontend Setup (React)
+### 5. Seed the database with initial data
+> This step is required before running the server. The seed command populates the database with products, suppliers, and stock data needed for the application to work correctly.
 
-1. **Navigate to frontend directory:**
-   ```bash
-   cd frontend
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Run the development server:**
-   ```bash
-   npm run dev
-   ```
-   *The app will be available at http://localhost:5173*
-
----
-
-## API Endpoints
-- Admin Panel: `http://127.0.0.1:8000/admin/`
-- API Root: `http://127.0.0.1:8000/api/`
-
-
-
-# IMPORTANT
-run seeds
-``` bash
 python manage.py seed_db
-```
+
+### 6. Start the development server
+python manage.py runserver 8000
+
+The API will be available at http://127.0.0.1:8000
+
+---
+
+## Frontend Setup
+
+### 1. Navigate to the frontend directory
+cd frontend
+
+### 2. Install dependencies
+npm install
+
+### 3. Start the development server
+npm run dev
+
+The app will be available at http://localhost:5173
+
+---
+
+## Available Endpoints
+
+| Endpoint | Description |
+|---|---|
+| http://127.0.0.1:8000/api/docs/ | Swagger UI (API documentation) |
+
+---
+
+## Quick Start (TL;DR)
+
+# Backend
+cd backend
+source venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py seed_db
+python manage.py runserver 8000
+
+# Frontend (new terminal)
+cd frontend
+npm install
+npm run dev
