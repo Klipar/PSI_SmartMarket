@@ -41,14 +41,34 @@ const ReorderPage = () => {
     } catch (err) { alert("Error updating quantity"); }
   };
 
-    const handleConfirmOrder = async (orderId) => {
-      alert(`Order #${orderId} has been successfully approved and sent to the supplier!`);
-      setOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));
+  const handleConfirmOrder = async (orderId) => {
+    if (!window.confirm("Send this order to supplier?")) return;
+    try {
+      await fetch(`${API_BASE}${orderId}/confirm/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      fetchOrders(); // оновлюємо з сервера, не просто видаляємо локально
+      if (expandedOrderId === orderId) setExpandedOrderId(null);
+    } catch (err) {
+      alert("Error confirming order");
+    }
+  };
 
-      if (expandedOrderId === orderId) {
-        setExpandedOrderId(null);
-      }
-    };
+  const handleSmartReorder = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/orders/smart-reorder/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await response.json();
+      alert(data.message);
+      fetchOrders();
+    } catch (err) {
+      alert("Error generating orders");
+    }
+  };
+
   // UC02: 6.1 Zamietnutie návrhu
   const handleRejectOrder = async (orderId) => {
     if (!window.confirm("Are you sure you want to delete this order draft?")) return;
@@ -110,6 +130,7 @@ const ReorderPage = () => {
           <p>Review and approve automated reorder drafts</p>
         </div>
         <div className="header-actions">
+          <button className="btn-secondary" onClick={handleSmartReorder}>⚡ Smart Reorder</button>
           <button className="btn-secondary" onClick={() => fetchOrders()}>🔄 Refresh</button>
           <button className="btn-secondary" onClick={handleExportPDF}>📤 Export PDF</button>
         </div>

@@ -174,18 +174,20 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['patch'])
     def confirm(self, request, pk=None):
         order = self.get_object()
-        order.stav = 'SENT' # Sent
+        order.stav = 'OD' # Sent
         order.save()
         return Response({'status': 'order confirmed'})
 
-    @action(detail=True, methods=['patch'])
+    @action(detail=True, methods=['patch'], url_path='update_item_quantity')
     def update_item_quantity(self, request, pk=None):
+        order = self.get_object()
         item_id = request.data.get('item_id')
         new_qty = request.data.get('quantity')
         try:
-            item = PolozkaObjednavky.objects.get(id=item_id, objednavka_id=pk)
+            item = PolozkaObjednavky.objects.get(id=item_id, objednavka=order)
             item.navrhovane_mnozstvo = new_qty
             item.save()
-            return Response({'status': 'quantity updated'})
+            serializer = self.get_serializer(order)
+            return Response(serializer.data)
         except PolozkaObjednavky.DoesNotExist:
-            return Response(status=404)
+            return Response({'error': 'Item not found'}, status=404)

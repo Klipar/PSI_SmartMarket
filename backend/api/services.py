@@ -55,42 +55,51 @@ class InventoryService:
             "status": "match" if difference == 0 else "discrepancy"
         }
 
-from django.db.models import F
+from django.db.models import F, Sum
 from .models import Tovar, NavrhObjednavky, PolozkaObjednavky
 
 class OrderService:
     @staticmethod
     def generate_smart_reorder():
-        low_stock_items = Tovar.objects.filter(aktualne_mnozstvo__lt=F('min_mnozstvo'))
+        tovary = Tovar.objects.prefetch_related('sarze').all()
 
         supplier_orders = {}
-        for tovar in low_stock_items:
+        for tovar in tovary:
             if not tovar.dodavatel:
                 continue
+
+            aktualne = tovar.sarze.aggregate(
+                total=Sum('mnozstvo')
+            )['total'] or 0
+
+            limit = tovar.kriticky_limit or 0
+
+            if aktualne >= limit:
+                continue
+
+            mnozstvo_na_objednanie = (limit * 2) - aktualne
 
             if tovar.dodavatel not in supplier_orders:
                 supplier_orders[tovar.dodavatel] = []
 
-            mnozstvo_na_objednanie = (tovar.min_mnozstvo * 2) - tovar.aktualne_mnozstvo
-
             supplier_orders[tovar.dodavatel].append({
                 'tovar': tovar,
-                'mnozstvo': mnozstvo_na_objednanie
+                'mnozstvo': mnozstvo_na_objednanie,
+                'cena': tovar.sarze.order_by('-id').first().aktualna_cena if tovar.sarze.exists() else 0
             })
 
         created_orders = []
         for supplier, items in supplier_orders.items():
             order = NavrhObjednavky.objects.create(
                 dodavatel=supplier,
-                stav='Pending Approval'
+                stav='NS'
             )
-
             for item_data in items:
                 PolozkaObjednavky.objects.create(
                     objednavka=order,
                     tovar=item_data['tovar'],
                     navrhovane_mnozstvo=item_data['mnozstvo'],
-                    cena_za_kus=item_data['tovar'].aktualna_cena
+                    cena_za_kus=item_data['cena']
                 )
             created_orders.append(order)
 

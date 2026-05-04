@@ -1,5 +1,5 @@
 from django.db import models
-from . import Dodavatel
+from .dodavatel import Dodavatel
 
 class NavrhObjednavky(models.Model):
     class Status(models.TextChoices):
@@ -14,6 +14,32 @@ class NavrhObjednavky(models.Model):
     _celkovaSuma: float = 0.0
     _idNavrhu: int = 0
     _stav_string: str = ""
+
+    @property
+    def total_price(self):
+        """Calculate total price for the order"""
+        return float(sum(
+            float(item.cena_za_kus) * item.navrhovane_mnozstvo
+            for item in self.polozky.all()
+        ))
+
+    @property
+    def items_count(self):
+        """Get number of items"""
+        return self.polozky.count()
+
+    @property
+    def supplier_name(self):
+        """Get supplier name"""
+        return self.dodavatel.meno if self.dodavatel else ""
+
+    def vypocitajCelkovuSumu(self) -> float:
+        """Legacy method for compatibility"""
+        return self.total_price
+
+    def __str__(self):
+        return f"Order #{self.id} ({self.supplier_name})"
+
 
     @property
     def celkovaSuma(self) -> float:
@@ -39,11 +65,6 @@ class NavrhObjednavky(models.Model):
     def stav_string(self, value: str):
         self._stav_string = value
 
-    def vypocitajCelkovuSumu(self) -> float:
-        return float(sum(p.cena_za_kus * p.navrhovane_mnozstvo for p in self.polozky.all()))
 
     def zlucitPodlaDodavatela(self, id_dodavatela: int) -> None:
         pass
-
-    def __str__(self):
-        return f"Order #{self.id} ({self.dodavatel.meno})"
