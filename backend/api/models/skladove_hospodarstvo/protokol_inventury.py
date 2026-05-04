@@ -2,7 +2,7 @@ from django.db import models
 from .inventura import Inventura
 
 class ProtokolInventury(models.Model):
-    inventura = models.OneToOneField(Inventura, on_delete=models.CASCADE)
+    inventura = models.ForeignKey(Inventura, on_delete=models.CASCADE)
     zisteny_rozdiel = models.IntegerField()
     poznamka = models.TextField(blank=True)
 

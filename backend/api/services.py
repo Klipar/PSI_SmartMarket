@@ -37,7 +37,7 @@ class InventoryService:
     def record_item_check(inventura_id, tovar_id, real_qty):
         """Comparison and registration of discrepancies (Steps 3-7 of the scenario)"""
         tovar = Tovar.objects.get(pk=tovar_id)
-        system_qty = tovar.aktualny_stav()
+        system_qty = tovar.aktualny_stav_db()
         difference = real_qty - system_qty
 
         if difference != 0:
